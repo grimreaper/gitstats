@@ -301,6 +301,7 @@ class DataCollector:
         os.rename(tempfile, cachefile)
 
 
+# noinspection PyComparisonWithNone
 class GitDataCollector(DataCollector):
     def collect(self, dir):
         DataCollector.collect(self, dir)
@@ -331,23 +332,17 @@ class GitDataCollector(DataCollector):
                 self.tags[tag] = {'stamp': stamp, 'hash': hash,
                                   'date': datetime.datetime.fromtimestamp(stamp).strftime('%Y-%m-%d'), 'commits': 0,
                                   'authors': {}}
-
-        # collect info on tags, starting from latest
-        tags_sorted_by_date_desc = map(lambda el: el[1],
-                                       reversed(sorted(map(lambda el: (el[1]['date'], el[0]), self.tags.items()))))
-        prev = None
-        for tag in reversed(tags_sorted_by_date_desc):
+        keys=self.tags.keys()
+        for tag in keys:
             cmd = 'git shortlog -s "%s"' % tag
-            if prev != None:
-                cmd += ' "^%s"' % prev
             output = getpipeoutput([cmd])
             if len(output) == 0:
                 continue
-            prev = tag
             for line in output.split('\n'):
-                parts = re.split('\s+', line, 2)
-                commits = int(parts[1])
-                author = parts[2]
+                trimmed = line.strip()
+                parts = trimmed.split(maxsplit=1)
+                commits = int(parts[0])
+                author = parts[1]
                 self.tags[tag]['commits'] += commits
                 self.tags[tag]['authors'][author] = commits
 
@@ -676,6 +671,7 @@ class GitDataCollector(DataCollector):
         # authors
         # name -> {place_by_commits, commits_frac, date_first, date_last, timedelta}
         self.authors_by_commits = getkeyssortedbyvaluekey(self.authors, 'commits')
+        self.authors_by_commits=list(self.authors_by_commits)
         self.authors_by_commits.reverse()  # most first
         for i, name in enumerate(self.authors_by_commits):
             self.authors[name]['place_by_commits'] = i + 1
@@ -706,6 +702,7 @@ class GitDataCollector(DataCollector):
 
     def getAuthors(self, limit=None):
         res = getkeyssortedbyvaluekey(self.authors, 'commits')
+        res = list(res)
         res.reverse()
         return res[:limit]
 
@@ -798,7 +795,7 @@ class HTMLReportCreator(ReportCreator):
         self.printNav(f)
 
         f.write('<dl>')
-        f.write('<dt>Project name</dt><dd>%s</dd>' % (data.projectname))
+        f.write('<dt>Project name</dt><dd>%s</dd>' % data.projectname)
         f.write('<dt>Generated</dt><dd>%s (in %d seconds)</dd>' % (
         datetime.datetime.now().strftime(format), time.time() - data.getStampCreated()))
         f.write(
@@ -1093,6 +1090,7 @@ class HTMLReportCreator(ReportCreator):
         for yymm in reversed(sorted(data.author_of_month.keys())):
             authordict = data.author_of_month[yymm]
             authors = getkeyssortedbyvalues(authordict)
+            authors= list(authors)
             authors.reverse()
             commits = data.author_of_month[yymm][authors[0]]
             next = ', '.join(authors[1:conf['authors_top'] + 1])
@@ -1109,6 +1107,7 @@ class HTMLReportCreator(ReportCreator):
         for yy in reversed(sorted(data.author_of_year.keys())):
             authordict = data.author_of_year[yy]
             authors = getkeyssortedbyvalues(authordict)
+            authors = list(authors)
             authors.reverse()
             commits = data.author_of_year[yy][authors[0]]
             next = ', '.join(authors[1:conf['authors_top'] + 1])
@@ -1120,6 +1119,7 @@ class HTMLReportCreator(ReportCreator):
         # Domains
         f.write(html_header(2, 'Commits by Domains'))
         domains_by_commits = getkeyssortedbyvaluekey(data.domains, 'commits')
+        domains_by_commits = list(domains_by_commits)
         domains_by_commits.reverse()  # most first
         f.write('<div class="vtable"><table>')
         f.write('<tr><th>Domains</th><th>Total (%)</th></tr>')
@@ -1239,7 +1239,9 @@ class HTMLReportCreator(ReportCreator):
         for tag in tags_sorted_by_date_desc:
             authorinfo = []
             self.authors_by_commits = getkeyssortedbyvalues(data.tags[tag]['authors'])
-            for i in reversed(self.authors_by_commits):
+            self.authors_by_commits2 = list(self.authors_by_commits)
+            self.authors_by_commits2.reverse()
+            for i in self.authors_by_commits2:
                 authorinfo.append('%s (%d)' % (i, data.tags[tag]['authors'][i]))
             f.write('<tr><td>%s</td><td>%s</td><td>%d</td><td>%s</td></tr>' % (
             tag, data.tags[tag]['date'], data.tags[tag]['commits'], ', '.join(authorinfo)))
