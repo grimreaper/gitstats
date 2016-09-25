@@ -72,7 +72,9 @@ def getpipeoutput(cmds, quiet=False):
             print('\r', )
         print('[%.5f] >> %s' % (end - start, ' | '.join(cmds)))
     exectime_external += (end - start)
-    return str(output).strip("\n")
+    old_output = output
+    new_output = old_output.decode('cp1251')
+    return str(new_output).strip("\n")
 
 
 def getlogrange(defaultrange='HEAD', end_only=True):
@@ -224,9 +226,9 @@ class DataCollector:
         if not os.path.exists(cachefile):
             return
         print('Loading cache...')
-        f = open(cachefile, 'r')
+        f = open(cachefile, 'rb')
         try:
-            self.cache = pickle.loads(zlib.decompress(f.read()))
+            self.cache = pickle.loads(zlib.decompress(f.read()), encoding="cp1252")
         except:
             # temporary hack to upgrade non-compressed caches
             f.seek(0)
@@ -287,7 +289,7 @@ class DataCollector:
     def saveCache(self, cachefile):
         print('Saving cache...')
         tempfile = cachefile + '.tmp'
-        f = open(tempfile, 'w')
+        f = open(tempfile, 'wb')
         # pickle.dump(self.cache, f)
         data = zlib.compress(pickle.dumps(self.cache))
         f.write(data)
@@ -303,6 +305,10 @@ class GitDataCollector(DataCollector):
     def collect(self, dir):
         DataCollector.collect(self, dir)
 
+        tempstr = getpipeoutput(['git shortlog -s %s' % getlogrange()])
+        print("Precedes")
+        print(tempstr)
+        print("Postcedes")
         self.total_authors += int(getpipeoutput(['git shortlog -s %s' % getlogrange(), 'wc -l']))
         # self.total_lines = int(getoutput('git-ls-files -z |xargs -0 cat |wc -l'))
 
@@ -562,9 +568,9 @@ class GitDataCollector(DataCollector):
         lines = getpipeoutput(
             ['git log --shortstat %s --pretty=format:"%%at %%aN" %s' % (extra, getlogrange('HEAD'))]).split('\n')
         lines.reverse()
-        files = 0;
-        inserted = 0;
-        deleted = 0;
+        files = 0
+        inserted = 0
+        deleted = 0
         total_lines = 0
         author = None
         for line in lines:
@@ -658,7 +664,7 @@ class GitDataCollector(DataCollector):
                 else:
                     print('Warning: unexpected line "%s"' % line)
             else:
-                numbers = getstatsummarycounts(line);
+                numbers = getstatsummarycounts(line)
 
                 if len(numbers) == 3:
                     (files, inserted, deleted) = map(lambda el: int(el), numbers)
