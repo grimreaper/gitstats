@@ -50,11 +50,17 @@ conf = {
     'processes': 8,
     'start_date': '',
     'verbose': False,
-    'text_files_not_read': ['svg']
+    'text_files_not_read': ['svg', 'woff', 'woff2']
 }
 
 
 def getpipeoutput(cmds, quiet=(not conf['verbose'])):
+    """
+    Standardised method of calling linux commands.
+    :param cmds: Command to execute
+    :param quiet: Prints commands on standard output if True.
+    :return:
+    """
     global exectime_external
     start = time.time()
     if not quiet and ON_LINUX and os.isatty(1):
@@ -526,18 +532,19 @@ class GitDataCollector(DataCollector):
                 ext = filename[(filename.rfind('.') + 1):]
             if len(ext) > conf['max_ext_length']:
                 ext = ''
-            if ext not in self.extensions:
-                self.extensions[ext] = {'files': 0, 'lines': 0}
-            self.extensions[ext]['files'] += 1
-            # if cache empty then add ext and blob id to list of new blob's
-            # otherwise try to read needed info from cache
-            if 'lines_in_blob' not in self.cache.keys():
-                blobs_to_read.append((ext, blob_id))
-                continue
-            if blob_id in self.cache['lines_in_blob'].keys():
-                self.extensions[ext]['lines'] += self.cache['lines_in_blob'][blob_id]
-            else:
-                blobs_to_read.append((ext, blob_id))
+            if ext not in conf['text_files_not_read']:
+                if ext not in self.extensions:
+                    self.extensions[ext] = {'files': 0, 'lines': 0}
+                self.extensions[ext]['files'] += 1
+                # if cache empty then add ext and blob id to list of new blob's
+                # otherwise try to read needed info from cache
+                if 'lines_in_blob' not in self.cache.keys():
+                    blobs_to_read.append((ext, blob_id))
+                    continue
+                if blob_id in self.cache['lines_in_blob'].keys():
+                    self.extensions[ext]['lines'] += self.cache['lines_in_blob'][blob_id]
+                else:
+                    blobs_to_read.append((ext, blob_id))
 
         # Get info abount line count for new blob's that wasn't found in cache
         pool = Pool(processes=conf['processes'])
