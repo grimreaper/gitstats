@@ -48,11 +48,13 @@ conf = {
     'linear_linestats': 1,
     'project_name': '',
     'processes': 8,
-    'start_date': ''
+    'start_date': '',
+    'verbose': False,
+    'text_files_not_read': ['svg']
 }
 
 
-def getpipeoutput(cmds, quiet=False):
+def getpipeoutput(cmds, quiet=(not conf['verbose'])):
     global exectime_external
     start = time.time()
     if not quiet and ON_LINUX and os.isatty(1):
@@ -73,7 +75,7 @@ def getpipeoutput(cmds, quiet=False):
         print('[%.5f] >> %s' % (end - start, ' | '.join(cmds)))
     exectime_external += (end - start)
     old_output = output
-    new_output = old_output.decode('cp1251')
+    new_output = old_output.decode('utf-8')
     return str(new_output).strip("\n")
 
 
@@ -1501,7 +1503,9 @@ Please see the manual page for more details.
 
 
 class GitStats:
-    def run(self, args_orig):
+    @staticmethod
+
+    def run(args_orig):
         optlist, args = getopt.getopt(args_orig, 'hc:', ["help"])
         for o, v in optlist:
             if o == '-c':
