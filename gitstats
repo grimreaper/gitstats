@@ -315,9 +315,9 @@ class GitDataCollector(DataCollector):
         DataCollector.collect(self, dir)
 
         tempstr = getpipeoutput(['git shortlog -s %s' % getlogrange()])
-        print("Precedes")
-        print(tempstr)
-        print("Postcedes")
+        # print("Precedes")
+        # print(tempstr)
+        # print("Postcedes")
         self.total_authors += int(getpipeoutput(['git shortlog -s %s' % getlogrange(), 'wc -l']))
         # self.total_lines = int(getoutput('git-ls-files -z |xargs -0 cat |wc -l'))
 
