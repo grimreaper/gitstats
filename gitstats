@@ -119,7 +119,7 @@ def getkeyssortedbyvaluekey(d, key):
 
 
 def getstatsummarycounts(line):
-    numbers = re.findall('\d+', line)
+    numbers = re.findall(r'\d+', line)
     if len(numbers) == 1:
         # neither insertions nor deletions: may probably only happen for "0 files changed"
         numbers.append(0)
@@ -523,7 +523,7 @@ class GitDataCollector(DataCollector):
         for line in lines:
             if len(line) == 0:
                 continue
-            parts = re.split('\s+', line, 4)
+            parts = re.split(r'\s+', line, 4)
             if parts[0] == '160000' and parts[3] == '-':
                 # skip submodules
                 continue
